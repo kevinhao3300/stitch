@@ -5,6 +5,7 @@ from werkzeug.utils import secure_filename
 import pathlib
 import random
 from flask_cors import CORS
+from PIL import Image, ImageOps
 
 UPLOAD_FOLDER = "files"
 app = Flask(__name__)
@@ -39,7 +40,19 @@ def fileUpload():
 @app.route("/get_image", methods=["GET"])
 def getFile():
     clients = get_clients()
-    return send_file(f"{UPLOAD_FOLDER}/{clients[request.args.get('client_id')]}")
+    height = request.args.get("height")
+    width = request.args.get("width")
+    if height and width:
+        image = ImageOps.exif_transpose(Image.open(f"{UPLOAD_FOLDER}/{clients[request.args.get('client_id')]}"))
+        original_size = image.size
+        new_filename = f"{UPLOAD_FOLDER}/{request.args.get('client_id')}_new.png"
+        image.resize((int(width), int(height))).resize(original_size).save(new_filename)
+        # TODO round colors
+        return send_file(new_filename)
+    else:
+        return send_file(f"{UPLOAD_FOLDER}/{clients[request.args.get('client_id')]}")
+
+
 
 
 @app.route("/delete_client", methods=["GET"])
